@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "rev-landing-page",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": ["/c", "cd /d D:\\Code\\rev-landing-page && npx next dev --port 4000"],
+      "port": 4000
+    }
+  ]
+}
