@@ -4,10 +4,8 @@ import { motion } from "framer-motion";
 import AnimButton from "@/components/AnimButton";
 import { useIsMobile } from "@/hooks/useIsMobile";
 
-/* ── Luxury easing ──────────────────────────────────── */
 const E = [0.22, 1, 0.36, 1] as [number, number, number, number];
 
-/* ── CMS types (kept for Sanity compatibility) ──────── */
 type HeroData = {
   headline?: string;
   headlineGreen?: string;
@@ -21,71 +19,7 @@ type HeroData = {
   heroImageUrl?: string;
 };
 
-/* ─────────────────────────────────────────────────────
-   Geometric background art — recreated from Figma 750-24483
-   Pure inline SVG: no expiring asset URLs.
-
-   Composition (in a 1440 × 700 conceptual space):
-   • Two gentle diagonal "ray" lines spanning full width,
-     converging toward the right — creates perspective depth
-   • Three identically-sized rectangles (280 × 245) stacked
-     with a +15px right / −15px up offset per layer, giving a
-     3-D "fanned cards" illusion
-   • A circle inscribed around the middle rectangle
-   • An X crossing through the middle rectangle's corners
-───────────────────────────────────────────────────── */
-function GeometricArt({ opacity = 1 }: { opacity?: number }) {
-  return (
-    <svg
-      viewBox="0 0 1440 700"
-      preserveAspectRatio="xMidYMid slice"
-      style={{
-        position: "absolute",
-        inset: 0,
-        width: "100%",
-        height: "100%",
-        zIndex: 0,
-        pointerEvents: "none",
-        opacity,
-      }}
-      aria-hidden="true"
-    >
-      {/* ── Ray lines ─────────────────────────────────────
-          Each line originates from a left corner of the back
-          rectangle and extends across the full width. They form
-          a subtle vanishing-point "cone" shape.
-      ─────────────────────────────────────────────────── */}
-      {/* Upper ray: from (0, 70) through back-rect top-left (935, 240) → right edge */}
-      <line x1="0"    y1="70"  x2="1440" y2="332" stroke="rgba(255,255,255,0.08)" strokeWidth="1"/>
-      {/* Lower ray: from (0, 640) through back-rect bottom-left (935, 485) → right edge */}
-      <line x1="0"    y1="640" x2="1440" y2="400" stroke="rgba(255,255,255,0.08)" strokeWidth="1"/>
-
-      {/* ── Stacked rectangles (all 280 × 245) ──────────── */}
-      {/* Back  — offset −15 right, +15 down from front */}
-      <rect x="935" y="240" width="280" height="245"
-        fill="none" stroke="rgba(255,255,255,0.13)" strokeWidth="1.5"/>
-      {/* Middle — base position */}
-      <rect x="950" y="225" width="280" height="245"
-        fill="none" stroke="rgba(255,255,255,0.16)" strokeWidth="1.5"/>
-      {/* Front — offset +15 right, −15 up */}
-      <rect x="965" y="210" width="280" height="245"
-        fill="none" stroke="rgba(255,255,255,0.20)" strokeWidth="1.5"/>
-
-      {/* ── Circle (centered on the middle rectangle) ────── */}
-      {/* Middle rect center: x=1090, y=347 — r≈142 (matches rect half-width) */}
-      <circle cx="1090" cy="347" r="142"
-        fill="none" stroke="rgba(255,255,255,0.17)" strokeWidth="1.5"/>
-
-      {/* ── X crossing (corner-to-corner of middle rect) ─── */}
-      <line x1="950"  y1="225" x2="1230" y2="470"
-        stroke="rgba(255,255,255,0.11)" strokeWidth="1"/>
-      <line x1="1230" y1="225" x2="950"  y2="470"
-        stroke="rgba(255,255,255,0.11)" strokeWidth="1"/>
-    </svg>
-  );
-}
-
-/* ── Film grain (site-wide texture) ───────────────── */
+/* ── Film grain ────────────────────────────────────── */
 function FilmGrain() {
   return (
     <div
@@ -95,7 +29,7 @@ function FilmGrain() {
         inset: 0,
         pointerEvents: "none",
         zIndex: 9998,
-        opacity: 0.055,
+        opacity: 0.03,
         mixBlendMode: "screen",
       }}
     >
@@ -109,174 +43,358 @@ function FilmGrain() {
   );
 }
 
+/* ── Slow, refined animations ── */
+const fadeUp = {
+  hidden: { opacity: 0, y: 30 },
+  visible: (delay: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: { duration: 1, ease: E, delay },
+  }),
+};
+
+const cardVariants = {
+  hidden: { opacity: 0, y: 50 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 1.2, ease: E, delay: 1 },
+  },
+};
+
+function LogoItem({ name, logo }: { name: string; logo: string }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: "10px", flexShrink: 0, whiteSpace: "nowrap" }}>
+      <img src={logo} alt={name} style={{ height: "18px", width: "auto", objectFit: "contain", opacity: 0.35, filter: "grayscale(100%) brightness(1.5)" }} />
+      <span style={{ fontFamily: "'Sora', sans-serif", fontSize: "12px", fontWeight: 300, color: "rgba(255,255,255,0.3)", letterSpacing: "0.06em", textTransform: "uppercase" }}>{name}</span>
+    </div>
+  );
+}
+
 /* ── Hero ─────────────────────────────────────────── */
 export default function Hero({ data }: { data?: HeroData }) {
   const isMobile = useIsMobile();
 
-  const buttonText = data?.buttonText || "Book a Free Call Now";
   const buttonUrl  = data?.buttonUrl  || "https://calendly.com/youssefhishmat/meeting-with-youssef";
-  const heroImage  = data?.heroImageUrl || "/Hero%20Section%20IMG.png";
+  const avatarUrl  = data?.trustAvatarUrl || "/youssef.png";
 
   return (
-    <section
-      style={{
-        position: "relative",
-        minHeight: "100svh",
-        display: "flex",
-        flexDirection: "column",
-        overflow: "hidden",
-        background: "#000",
-      }}
-    >
-      {/* ── Hero image — desktop only, hidden on mobile ── */}
-      {!isMobile && (
-        <img
-          src={heroImage}
-          alt=""
-          aria-hidden="true"
-          style={{
-            position: "absolute",
-            top: "128px",
-            left: 0,
-            right: 0,
-            bottom: 0,
-            width: "100%",
-            height: "calc(100% - 128px)",
-            objectFit: "cover",
-            objectPosition: "center center",
-            zIndex: 0,
-            pointerEvents: "none",
-          }}
-        />
-      )}
-
-      {/* Film grain */}
-      <FilmGrain />
-
-      {/* ── Text content — sits on top of the image ─────── */}
-      <div
+    <>
+       {/* ── CSS Keyframes for scroll ── */}
+      <section
         style={{
           position: "relative",
-          zIndex: 1,
-          flex: 1,
+          minHeight: "100svh",
           display: "flex",
           flexDirection: "column",
-          justifyContent: "center",
-          padding: isMobile
-            ? "140px 24px 60px"
-            : "clamp(120px, 16vh, 180px) 128px 80px",
+          overflow: "hidden",
+          background: "#000",
         }}
       >
-        {/* Badge */}
-        <motion.span
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.65, ease: E, delay: 0.1 }}
-          style={{
-            display: "inline-block",
-            background: "#e3e6e9",
-            borderRadius: 0,
-            padding: isMobile ? "6px 12px" : "10px 16px",
-            fontFamily: "'Sora', sans-serif",
-            fontSize: "14px",
-            fontWeight: 400,
-            lineHeight: 1.3,
-            color: "#101405",
-            width: "fit-content",
-            marginBottom: isMobile ? "20px" : "28px",
-            alignSelf: isMobile ? "center" : "flex-start",
-          }}
-        >
-          Web Design &amp; Development · Cairo
-        </motion.span>
-
-        {/* Headline + tagline + CTA */}
+        {/* Very subtle ambient glow */}
         <div
           style={{
-            display: "flex",
+            position: "absolute",
+            top: "20%",
+            left: "30%",
+            width: "400px",
+            height: "400px",
+            background: "radial-gradient(circle, rgba(159,204,46,0.025) 0%, transparent 70%)",
+            pointerEvents: "none",
+            zIndex: 0,
+          }}
+        />
+
+        <FilmGrain />
+
+        {/* ── Main layout ─────────────────────────────── */}
+        <div
+          style={{
+            position: "relative",
+            zIndex: 1,
+            flex: 1,
+            display: isMobile ? "flex" : "grid",
+            gridTemplateColumns: "1fr 400px",
+            gap: "80px",
+            alignItems: "center",
+            padding: isMobile
+              ? "140px 28px 60px"
+              : "clamp(140px, 18vh, 200px) 100px 100px",
             flexDirection: "column",
-            alignItems: isMobile ? "center" : "flex-start",
-            gap: isMobile ? "24px" : "32px",
-            maxWidth: isMobile ? "100%" : "942px",
-            textAlign: isMobile ? "center" : "left",
           }}
         >
-          {/* Headline + tagline */}
+          {/* ── LEFT COLUMN ─────────────────────────── */}
           <div
             style={{
               display: "flex",
               flexDirection: "column",
-              gap: isMobile ? "16px" : "8px",
+              maxWidth: isMobile ? "100%" : "620px",
             }}
           >
-            {/* Headline */}
+            {/* Badge */}
             <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.9, ease: E, delay: 0.22 }}
+              custom={0}
+              variants={fadeUp}
+              initial="hidden"
+              animate="visible"
               style={{
                 fontFamily: "'Sora', sans-serif",
-                fontSize: isMobile ? "24px" : "clamp(38px, 4.4vw, 64px)",
+                fontSize: "12px",
+                fontWeight: 400,
                 lineHeight: 1.3,
-                color: "#ffffff",
+                color: "rgba(255,255,255,0.25)",
                 margin: 0,
-                letterSpacing: 0,
-                maxWidth: isMobile ? "345px" : "none",
+                marginBottom: isMobile ? "16px" : "20px",
+                letterSpacing: "0.15em",
+                textTransform: "uppercase",
               }}
             >
-              <span style={{ fontWeight: 400 }}>Crafting strategic </span>
-              <span style={{ fontWeight: 700, color: "#9fcc2e" }}>website</span>
-              <br />
-              <span style={{ fontWeight: 400 }}>designs that elevate your</span>
-              <br />
-              <span style={{ fontWeight: 700, color: "#9fcc2e" }}>brand &amp; fuel growth.</span>
+              Web Design &amp; Development · Egypt
             </motion.p>
+
+            {/* H1 */}
+            <motion.h1
+              custom={0.15}
+              variants={fadeUp}
+              initial="hidden"
+              animate="visible"
+              style={{
+                fontFamily: "'Sora', sans-serif",
+                fontSize: isMobile ? "34px" : "clamp(44px, 4.5vw, 62px)",
+                fontWeight: 500,
+                lineHeight: 1.08,
+                color: "#ffffff",
+                margin: 0,
+                marginBottom: isMobile ? "16px" : "20px",
+                letterSpacing: "-0.035em",
+              }}
+            >
+              Websites that sell
+              <br />
+              <span style={{ color: "rgba(255,255,255,0.35)" }}>
+                on autopilot.
+              </span>
+            </motion.h1>
 
             {/* Tagline */}
             <motion.p
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, ease: E, delay: 0.4 }}
+              custom={0.35}
+              variants={fadeUp}
+              initial="hidden"
+              animate="visible"
               style={{
                 fontFamily: "'Sora', sans-serif",
-                fontSize: isMobile ? "14px" : "16px",
-                fontWeight: 400,
-                lineHeight: 1.6,
-                color: "#fbfbfb",
+                fontSize: isMobile ? "15px" : "16px",
+                fontWeight: 200,
+                lineHeight: 1.7,
+                color: "rgba(255,255,255,0.4)",
                 margin: 0,
-                maxWidth: isMobile ? "100%" : "643px",
+                marginBottom: isMobile ? "28px" : "32px",
+                maxWidth: "460px",
               }}
             >
-              {data?.subheadline ? (
-                data.subheadline
-              ) : (
-                <>
-                  Focused on the metrics that matter,<br />
-                  we design high-performance websites built for scale.<br />
-                  Every pixel serves a purpose — to convert &amp; grow.
-                </>
-              )}
+              We design and build high-performance websites
+              that turn visitors into revenue without looking
+              like everything else in your industry.
             </motion.p>
+
+            {/* Free Value Section */}
+            <motion.div
+              custom={0.5}
+              variants={fadeUp}
+              initial="hidden"
+              animate="visible"
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "8px",
+                marginBottom: isMobile ? "20px" : "24px",
+              }}
+            >
+              <p
+                style={{
+                  fontFamily: "'Sora', sans-serif",
+                  fontSize: isMobile ? "14px" : "15px",
+                  fontWeight: 200,
+                  lineHeight: 1.6,
+                  color: "rgba(255,255,255,0.35)",
+                  margin: 0,
+                }}
+              >
+                Every engagement starts with a complimentary
+                strategy session.
+              </p>
+              <p
+                style={{
+                  fontFamily: "'Sora', sans-serif",
+                  fontSize: isMobile ? "13px" : "14px",
+                  fontWeight: 200,
+                  lineHeight: 1.7,
+                  color: "rgba(255,255,255,0.22)",
+                  margin: 0,
+                  paddingLeft: isMobile ? "0" : "16px",
+                  borderLeft: isMobile ? "none" : "1px solid rgba(255,255,255,0.08)",
+                }}
+              >
+                30 minutes. Your site reviewed.
+                <br />
+                A clear roadmap. No pitch.
+              </p>
+            </motion.div>
+
+            {/* CTA */}
+            <motion.div
+              custom={0.7}
+              variants={fadeUp}
+              initial="hidden"
+              animate="visible"
+            >
+              <AnimButton
+                href={buttonUrl}
+                variant="green"
+                target="_blank"
+              >
+                Book a Free Strategy Session
+              </AnimButton>
+            </motion.div>
           </div>
 
-          {/* CTA */}
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, ease: E, delay: 0.55 }}
-            style={isMobile ? { width: "100%" } : {}}
-          >
-            <AnimButton
-              href={buttonUrl}
-              variant="green"
-              target="_blank"
-              style={isMobile ? { width: "100%", justifyContent: "center" } : {}}
+          {/* ── RIGHT COLUMN ───────────────────────── */}
+          {!isMobile && (
+            <motion.div
+              variants={cardVariants}
+              initial="hidden"
+              animate="visible"
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
+              }}
             >
-              {buttonText}
-            </AnimButton>
-          </motion.div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "32px" }}>
+                <img
+                  src={avatarUrl}
+                  alt="Youssef Hishmat"
+                  style={{
+                    width: "56px",
+                    height: "56px",
+                    borderRadius: "50%",
+                    objectFit: "cover",
+                    filter: "grayscale(30%)",
+                  }}
+                />
+                <p
+                  style={{
+                    fontFamily: "'Sora', sans-serif",
+                    fontSize: "15px",
+                    fontWeight: 200,
+                    lineHeight: 1.8,
+                    color: "rgba(255,255,255,0.5)",
+                    margin: 0,
+                  }}
+                >
+                  Most agencies build pretty websites that don't convert.
+                  We build platforms that make you money.
+                  There's a difference — and it shows in the results.
+                </p>
+                <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                  <p
+                    style={{
+                      fontFamily: "'Sora', sans-serif",
+                      fontSize: "14px",
+                      fontWeight: 400,
+                      color: "rgba(255,255,255,0.8)",
+                      margin: 0,
+                      lineHeight: 1.3,
+                    }}
+                  >
+                    Youssef Hishmat
+                  </p>
+                  <p
+                    style={{
+                      fontFamily: "'Sora', sans-serif",
+                      fontSize: "12px",
+                      fontWeight: 200,
+                      color: "rgba(255,255,255,0.25)",
+                      margin: 0,
+                      lineHeight: 1.3,
+                      letterSpacing: "0.04em",
+                    }}
+                  >
+                    Founder, Rev
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* ── Mobile card ── */}
+          {isMobile && (
+            <motion.div
+              variants={cardVariants}
+              initial="hidden"
+              animate="visible"
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "24px",
+                marginTop: "24px",
+              }}
+            >
+              <img
+                src={avatarUrl}
+                alt="Youssef Hishmat"
+                style={{
+                  width: "48px",
+                  height: "48px",
+                  borderRadius: "50%",
+                  objectFit: "cover",
+                  filter: "grayscale(30%)",
+                }}
+              />
+              <p
+                style={{
+                  fontFamily: "'Sora', sans-serif",
+                  fontSize: "14px",
+                  fontWeight: 200,
+                  lineHeight: 1.8,
+                  color: "rgba(255,255,255,0.5)",
+                  margin: 0,
+                }}
+              >
+                Most agencies build pretty websites that don't convert.
+                We build platforms that make you money.
+                There's a difference — and it shows in the results.
+              </p>
+              <div style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
+                <p
+                  style={{
+                    fontFamily: "'Sora', sans-serif",
+                    fontSize: "13px",
+                    fontWeight: 400,
+                    color: "rgba(255,255,255,0.8)",
+                    margin: 0,
+                  }}
+                >
+                  Youssef Hishmat
+                </p>
+                <p
+                  style={{
+                    fontFamily: "'Sora', sans-serif",
+                    fontSize: "11px",
+                    fontWeight: 200,
+                    color: "rgba(255,255,255,0.25)",
+                    margin: 0,
+                    letterSpacing: "0.04em",
+                  }}
+                >
+                  Founder, Rev
+                </p>
+              </div>
+            </motion.div>
+          )}
         </div>
-      </div>
-    </section>
+      </section>
+    </>
   );
 }

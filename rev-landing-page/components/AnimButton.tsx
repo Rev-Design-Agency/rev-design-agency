@@ -16,14 +16,12 @@ type Props = {
 /* Fire GA4 + Meta Pixel events for every booking CTA click */
 function fireBookingEvent(label: string, eventName: string) {
   try {
-    // GA4 — mark this as a Key Event in GA4 dashboard after adding
     if (typeof window !== "undefined" && (window as any).gtag) {
       (window as any).gtag("event", eventName, {
         event_category: "CTA",
         event_label: label,
       });
     }
-    // Meta Pixel Lead event
     if (typeof window !== "undefined" && (window as any).fbq) {
       (window as any).fbq("track", "Lead", { content_name: label });
     }
@@ -58,7 +56,6 @@ export default function AnimButton({
       ? "btn-outline-dark"
       : "btn-green";
 
-  // Determine if we should fire a tracking event on click
   const shouldTrack = trackEvent !== false && (trackEvent || isBookingHref(href));
   const eventName   = typeof trackEvent === "string" ? trackEvent : "book_call_click";
 
@@ -68,16 +65,34 @@ export default function AnimButton({
     }
   };
 
+  /* ── Premium hover glow per variant ── */
+  const hoverGlow =
+    variant === "green"
+      ? "0 0 30px rgba(159,204,46,0.3), 0 0 60px rgba(159,204,46,0.1)"
+      : variant === "outline"
+      ? "0 0 20px rgba(255,255,255,0.06)"
+      : "0 0 20px rgba(255,255,255,0.08)";
+
   return (
     <motion.a
       href={href}
       target={target}
       rel={target === "_blank" ? "noopener noreferrer" : undefined}
       className={noDot ? `${base} btn-no-dot` : base}
-      style={style}
+      style={{
+        ...style,
+        textDecoration: "none",
+      }}
       data-cursor="cta"
-      whileHover={{ scale: 1.04 }}
-      whileTap={{ scale: 0.97 }}
+      whileHover={{
+        scale: 1,
+        boxShadow: hoverGlow,
+        transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] },
+      }}
+      whileTap={{
+        scale: 0.99,
+        transition: { duration: 0.1 },
+      }}
       onClick={handleClick}
     >
       {/* clip wrapper — shows exactly one line of text */}
